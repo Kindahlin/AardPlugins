@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2025-01-17 15:59:20"
    requires="5.07"
-   version="1.2"
+   version="1.3"
    >
 </plugin>
 
@@ -168,7 +168,7 @@ local map_rooms = {}
 
 function get_current_room_id()
   return gmcp("room.info.num")
-  --return "47694"
+  --return "47678"
 end
 
 function parse_entities(name, line, wildcard)
@@ -202,7 +202,7 @@ end
 
 function display_help()
   AnsiNote( ColoursToANSI( "@x038================================================================================" ) )
-  AnsiNote( ColoursToANSI( "@x038=                     @WTranscendence Positional Scanner v1.2@x038                    =" ) )
+  AnsiNote( ColoursToANSI( "@x038=                     @WTranscendence Positional Scanner v1.3@x038                    =" ) )
   AnsiNote( ColoursToANSI( "@x038================================================================================" ) )
   AnsiNote( ColoursToANSI( "@x038= @WPhase 1@x038                                                                      =" ) )
   AnsiNote( ColoursToANSI( "@x038=                                                                              =" ) )
@@ -222,6 +222,7 @@ end
 function tps_command(name, line, wildcard)
   local in_combat = gmcp("char.status.state") == "8"
   local is_leader = gmcp("group.leader") == gmcp("char.base.name")
+  local in_phase_1 = rooms[get_current_room_id()] ~= nil
 
   if wildcard["chan"] ~= nil then
     if wildcard["chan"] == "help" then
@@ -235,12 +236,12 @@ function tps_command(name, line, wildcard)
 
   if in_combat then
     report_target_info()
-  elseif is_leader then
+  elseif is_leader and in_phase_1 then
   	SendNoEcho("echo {tps_scan}")
 	SendNoEcho("scan")
 	SendNoEcho("echo {/tps_scan}")
   else
-    Note("You must be the group leader or in combat to generate a TPS report.")
+    Note("You must be the group leader in phase 1 or in combat to generate a TPS report.")
   end
 end
 
@@ -284,7 +285,7 @@ function end_scan()
 end
 
 function parse_directions(name, line, wildcard)
-  local dist = wildcard["dist"]
+  local dist = wildcard["dist"] or ""
   local dir = wildcard["dir"]
   if dist == "" then dist = "1" end
   target_room = get_room(dist, dir)
