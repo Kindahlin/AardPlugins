@@ -167,8 +167,8 @@ local map_rows = 11
 local map_rooms = {}
 
 function get_current_room_id()
-  --return gmcp("room.info.num")
-  return "47678"
+  return gmcp("room.info.num")
+  --return "47678"
 end
 
 function parse_entities(name, line, wildcard)
