@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2025-01-17 15:59:20"
    requires="5.07"
-   version="1.3"
+   version="1.4"
    >
 </plugin>
 
@@ -202,7 +202,7 @@ end
 
 function display_help()
   AnsiNote( ColoursToANSI( "@x038================================================================================" ) )
-  AnsiNote( ColoursToANSI( "@x038=                     @WTranscendence Positional Scanner v1.3@x038                    =" ) )
+  AnsiNote( ColoursToANSI( "@x038=                     @WTranscendence Positional Scanner v1.4@x038                    =" ) )
   AnsiNote( ColoursToANSI( "@x038================================================================================" ) )
   AnsiNote( ColoursToANSI( "@x038= @WPhase 1@x038                                                                      =" ) )
   AnsiNote( ColoursToANSI( "@x038=                                                                              =" ) )
