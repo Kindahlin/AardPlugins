@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2025-01-17 15:59:20"
    requires="5.07"
-   version="1.3"
+   version="1.4"
    >
 </plugin>
 
@@ -202,7 +202,7 @@ end
 
 function display_help()
   AnsiNote( ColoursToANSI( "@x038================================================================================" ) )
-  AnsiNote( ColoursToANSI( "@x038=                     @WTranscendence Positional Scanner v1.3@x038                    =" ) )
+  AnsiNote( ColoursToANSI( "@x038=                     @WTranscendence Positional Scanner v1.4@x038                    =" ) )
   AnsiNote( ColoursToANSI( "@x038================================================================================" ) )
   AnsiNote( ColoursToANSI( "@x038= @WPhase 1@x038                                                                      =" ) )
   AnsiNote( ColoursToANSI( "@x038=                                                                              =" ) )
@@ -661,10 +661,24 @@ function reconstruct_path(came_from, current)
 	  end
 	end
   end
+  return make_run_path(path)
+end
+
+
+function make_run_path(path)
+  local json = require("json")
+  if type(path) == "string" then
+	path = json.decode(path)
+  end
+  -- Output the elements of path
+  for i=1,#path,1 do
+	Note(path[i])
+  end
+  
   -- If path has duplicate directions in a row, remove the duplicates and put a number in front indicating the number of duplicates
   local i = 1
-  local concat_path = ""
-  while i < #path do
+  local run_path = ""
+  while i <= #path do
     local count = 1
     while path[i] == path[i+1] do
 	  count = count + 1
@@ -674,13 +688,13 @@ function reconstruct_path(came_from, current)
 	  end
 	end
 	if count > 1 then
-	  concat_path = concat_path .. count .. path[i]
+	  run_path = run_path .. count .. path[i]
 	else
-	  concat_path = concat_path .. path[i]
+	  run_path = run_path .. path[i]
 	end
 	i = i + 1
   end
-  return concat_path
+  return run_path
 end
 
 function tableContains(table, element)
