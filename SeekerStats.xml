@@ -464,7 +464,8 @@ function on_seekrank_playername_parser(name, line, wildcards)
 	end
   elseif (playername == "export") then
 	for name, join_date in pairs(join_dates) do
-	  output_text("seekrank add " .. name .. " " .. string.sub(join_date,1,4) .. " " .. string.sub(join_date,6,7) .. " " .. string.sub(join_date,9,10))
+	  local year, month, day = join_date:match("(%d+)-(%d+)-(%d+)")
+	  output_text("seekrank add " .. name .. " " .. year .. " " .. month .. " " .. day)
 	end
 	return
   elseif (playername == "points") then
