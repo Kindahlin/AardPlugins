@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2024-09-22 13:16:41"
    requires="5.07"
-   version="1.5"
+   version="1.6"
    >
 
 </plugin>
@@ -196,6 +196,18 @@
 
 <!--  Aliases  -->
 <aliases>
+    <alias
+   match="seekrank update check"
+   enabled="y"
+   script="update_check_alias"
+   sequence="95"
+  />
+  <alias
+   match="seekrank update install"
+   enabled="y"
+   script="update_install_alias"
+   sequence="95"
+  />
 <alias
    match="^seekrank (\w+)$"
    regexp="y"
@@ -256,6 +268,7 @@
 -- CODE SECTION --
 
 require 'aardwolf_colors'
+require 'gmcphelper'
 
 ranks = {
   ["Student"] = 1,
@@ -277,7 +290,68 @@ rank_points_needed = {
   3150
 }
 
-join_dates = {}
+rank_time_needed = {
+  0,
+  30,
+  60,
+  90,
+  180,
+  360
+}
+
+join_dates = {
+  ["Adele"] = "2008-11-27",
+  ["Ani"] = "2012-01-15",
+  ["Caralah"] = "2007-06-19",
+  ["ElFeneri"] = "2011-11-03",
+  ["Emmalee"] = "2011-12-18",
+  ["Gilduran"] = "2012-06-04",
+  ["Nubeiro"] = "2012-02-19",
+  ["Ozzy"] = "2003-11-15",
+  ["PowerSlave"] = "2013-04-10",
+  ["Foxin"] = "2013-02-24",
+  ["Seyar"] = "2011-12-09",
+  ["Shaylah"] = "2007-10-14",
+  ["Skgubza"] = "2013-05-04",
+  ["Soltair"] = "2006-03-18",
+  ["Stargate"] = "2007-03-02",
+  ["StarsOscar"] = "2012-07-18",
+  ["Taokan"] = "2012-06-04",
+  ["Tirra"] = "2011-12-12",
+  ["Zethien"] = "2009-06-24",
+  ["Curiousj"] = "2013-07-01",
+  ["Ulrich"] = "2013-07-02",
+  ["RandAlthor"] = "2013-07-10",
+  ["Xarfin"] = "2013-08-04",
+  ["WillowSong"] = "2014-01-13",
+  ["Ragtime"] = "2015-01-16",
+  ["Kalzar"] = "2014-04-22",
+  ["Leil"] = "2014-05-29",
+  ["Urru"] = "2015-05-11",
+  ["Bellon"] = "2016-01-12",
+  ["Gorsk"] = "2016-12-11",
+  ["Exa"] = "2017-01-03",
+  ["Malark"] = "2016-04-30",
+  ["Sochen"] = "2017-04-11",
+  ["Questioner"] = "2017-06-16",
+  ["Ziv"] = "2017-06-30",
+  ["Geji"] = "2017-12-27",
+  ["ShadowDragon"] = "2020-10-01",
+  ["Graciella"] = "2021-02-20",
+  ["Scars"] = "2022-12-01",
+  ["Chekhu"] = "2022-12-27",
+  ["Chimeishio"] = "2023-07-22",
+  ["Amya"] = "2023-08-06",
+  ["Vader"] = "2023-10-07",
+  ["Inertia"] = "2024-01-07",
+  ["Anssett"] = "2024-01-30",
+  ["Haddin"] = "2024-02-06",
+  ["Keman"] = "2024-02-14",
+  ["Sletch"] = "2024-06-02",
+  ["Kindahlin"] = "2024-07-25",
+  ["Zeinath"] = "2024-10-10",
+  ["Kazm"] = "2025-12-08",
+}
 
 title_color = "@W"
 default_color = "@w"
@@ -286,6 +360,7 @@ stat_color = "@Y"
 value_color = "@W"
 name_color = "@C"
 rank_color = "@Y"
+rankme_enabled = false
 
 last_updated = nil
 post_refresh_command = nil
@@ -338,7 +413,8 @@ function get_ordered_stats()
 		cp_points = stats.cp_points or nil,
 		join_date = stats.join_date or nil,
 		total_days = stats.total_days or nil,
-		join_points = stats.join_points or nil
+		join_points = stats.join_points or nil,
+    is_eligible_days = stats.is_eligible_days or nil
 	  }
 	)
   end
@@ -364,20 +440,23 @@ function on_seekrank_all()
 	local points_need_tabs = 2
 	-- Join Date
 	local join_date_tabs = 2
+  local is_eligible_days_tabs = 2
 
 	output_text(
 		display_stat("Name", name_tabs, title_color) ..
 		display_stat("Rank", rank_tabs, title_color) ..
 		display_stat("Rank Points", total_points_tabs, title_color) ..
 		display_stat("Next Rank", points_need_tabs, title_color) ..
-		display_stat("Join Date", join_date_tabs, title_color)
+		display_stat("Join Date", join_date_tabs, title_color) ..
+    display_stat("Days til eligible", is_eligible_days_tabs, title_color)
 	)
 	output_text(
 		display_stat("----", name_tabs, seperator_color) ..
 		display_stat("----", rank_tabs, seperator_color) ..
 		display_stat("-----------", total_points_tabs, seperator_color) ..
 		display_stat("---------", points_need_tabs, seperator_color) ..
-		display_stat("---------", join_date_tabs, seperator_color)
+		display_stat("---------", join_date_tabs, seperator_color) ..
+    display_stat("---------", is_eligible_days_tabs, seperator_color)
 	)
 
 	for i, stats in ipairs(ordered_stats) do
@@ -387,7 +466,8 @@ function on_seekrank_all()
 		display_stat(stats.rank, rank_tabs, value_color) ..
 		display_stat(stats.rank_points, total_points_tabs, value_color) ..
 		display_stat(stats.rank_points_needed, points_need_tabs, value_color) ..
-		display_stat(stats.join_date, join_date_tabs, value_color)
+		display_stat(stats.join_date, join_date_tabs, value_color) ..
+    display_stat(stats.is_eligible_days, is_eligible_days_tabs, value_color)
 		)
 	end
   end
@@ -419,6 +499,12 @@ function on_seekrank_playername_parser(name, line, wildcards)
 	output_text("Deletes a join date for a player\n")
 	output_text("@Yseekrank purge <confirm>")
 	output_text("Removes all existing join dates\n")
+  output_text("@Yseekrank rankme")
+	output_text("Toggles the rankme trigger on ct channel off and on\n")
+  output_text("@Yseekrank update check")
+  output_text("Checks for available updates\n")
+  output_text("@Yseekrank update install")
+  output_text("Installs any available updates\n")
 	return
   elseif (playername == "update") then
 	update_stats()
@@ -464,8 +550,17 @@ function on_seekrank_playername_parser(name, line, wildcards)
 	end
   elseif (playername == "export") then
 	for name, join_date in pairs(join_dates) do
-	  local year, month, day = join_date:match("(%d+)-(%d+)-(%d+)")
-	  output_text("seekrank add " .. name .. " " .. year .. " " .. month .. " " .. day)
+    thedate = ""
+    for i in string.gmatch(join_date,'[^-]+') do
+      if #thedate == 0 then
+        thedate = i
+      else
+        thedate = thedate .. " " .. i
+      end
+    end
+    --output_text("seekrank add " .. name .. " " .. string.sub(join_date,1,4) .. " " .. string.sub(join_date,6,7) .. " " .. string.sub(join_date,9,10))
+    output_text("seekrank add " .. name .. " " .. thedate)
+    thedate = ""
 	end
 	return
   elseif (playername == "points") then
@@ -480,6 +575,12 @@ function on_seekrank_playername_parser(name, line, wildcards)
 	output_text("Gold Donated:\t1 Point per 200000 Gold Donated")
 	output_text("QP Donated:\t1 Point per 15 Quest Points Donated")
 	return
+  elseif (playername=="rankme") then
+    rankme_enabled = not rankme_enabled
+    if rankme_enabled then output_text("@Wrankme function on CT enabled.")
+    else output_text("@Wrankme function in CT disabled.")
+    end
+    return
   end
   local channel = nil
   local type = nil
@@ -540,11 +641,19 @@ function output_seekrank_playername_channel(name, channel)
     output_text("Player not found.")
 	return
   end
+  local isEligible = ""
+  local eligibleDays = tonumber(stats.is_eligible_days)
+  if (eligibleDays ~= nil) then
+    if (eligibleDays<=0) then 
+      isEligible = stat_color .. " [" .. value_color .. "Eligible for promotion" .. stat_color .. "]"
+    end
+  end
   output_text(
 	name_color .. name .. default_color .. ', ' .. 
 	stat_color .. stats.rank .. default_color .. ', ' ..
 	stat_color .. 'Current: ' .. value_color .. stats.rank_points .. default_color .. ', ' ..
-	stat_color .. 'Next Rank: ' .. value_color .. stats.rank_points_needed .. default_color, channel)
+	stat_color .. 'Next Rank: ' .. value_color .. stats.rank_points_needed ..default_color ..
+  isEligible .. default_color, channel)
 end
 
 function on_seekrank_playername_detail(playername)
@@ -576,7 +685,8 @@ function output_seekrank_playername_detail_channel(playername, channel)
 	stat_color .. 'Days Clanned(' .. value_color .. stats.join_points .. stat_color .. ')' .. default_color .. ', ' ..
 	stat_color .. 'Pups(' .. value_color .. stats.pup_points .. stat_color .. ')' .. default_color .. ', ' ..
 	stat_color .. 'Gold Donated(' .. value_color .. stats.gold_points .. stat_color .. ')' .. default_color .. ', ' ..
-	stat_color .. 'QP Donated(' .. value_color .. stats.qp_points .. stat_color .. ')', channel)
+	stat_color .. 'QP Donated(' .. value_color .. stats.qp_points .. stat_color .. ')' .. default_color .. ', ' ..
+  stat_color .. 'Days til eligible(' .. value_color .. stats.is_eligible_days .. stat_color .. ')', channel)
 end
 
 function on_seekrank_playername_item_detail(playername)
@@ -727,9 +837,12 @@ function add_join_date(name)
   local join_date = join_dates[name] or "nil"
   local total_days = get_days_clanned(name)
   local join_points = get_join_points(name)
+  local is_eligible_days = get_is_eligible_days(name)
   add_member_stats(name, "join_date", join_date)
   add_member_stats(name, "total_days", total_days)
   add_member_stats(name, "join_points", join_points)
+  add_member_stats(name, "is_eligible_days", is_eligible_days)
+  
 end
 
 function get_rank_points(name)
@@ -810,6 +923,7 @@ function display_stats()
   local gold_points_tabs = 2
   local qp_donated_tabs = 2
   local qp_points_tabs = 2
+  local is_eligible_days_tabs = 2
 
   -- Note out a tab delimited header for columns above using display_stat function to determine tabs
   output_text(
@@ -835,7 +949,8 @@ function display_stats()
 	display_stat("Gold Donated", gold_tabs, title_color) ..
 	display_stat("Gold Points", gold_points_tabs, title_color) ..
 	display_stat("QP Donated", qp_donated_tabs, title_color) ..
-	display_stat("QP Points", qp_points_tabs, title_color) .. "\n"
+	display_stat("QP Points", qp_points_tabs, title_color) ..
+  display_stat("Eligible by days", is_eligible_days_tabs, title_color) .. "\n"
   )
 
   for i, stats in ipairs(ordered_stats) do
@@ -863,7 +978,8 @@ function display_stats()
 	  display_stat(stats.gold, gold_tabs, value_color) ..
 	  display_stat(stats.gold_points, gold_points_tabs, value_color) ..
 	  display_stat(stats.qp_donated, qp_donated_tabs, value_color) ..
-	  display_stat(stats.qp_points, qp_points_tabs, value_color)
+	  display_stat(stats.qp_points, qp_points_tabs, value_color) ..
+    display_stat(stats.is_eligible_days, is_eligible_days_tabs, value_color)
 	)
   end
 end
@@ -979,15 +1095,156 @@ function get_join_points(name)
   return math.floor(days / 7)
 end
 
+function get_is_eligible_days(name)
+--use rank_time_needed and rank and and stats.total_days to determine if player is eligible for next promotion
+  local days_clanned = get_days_clanned(name)
+  local is_eligible_days = "Max"
+  local current_rank = ranks[seeker_stats[name].rank] or 0
+  if current_rank < 6 then
+    is_eligible_days = rank_time_needed[current_rank + 1] - days_clanned
+  end
+  return is_eligible_days
+end
+
 function OnPluginInstall ()
   require "serialize"  -- needed to serialize table to string
 
   assert (loadstring (GetVariable ("join_dates") or "")) ()
+  rankme_enabled = toBoolean(GetVariable("rankme_state"))
 end
 
 function OnPluginSaveState ()
   SetVariable ("join_dates", serialize.save ("join_dates"))
+  SetVariable ("rankme_state",tostring(rankme_enabled))
 end
+
+function toBoolean(input)
+  if(input == nil) then return false end
+  return string.lower(input) == "true"
+end
+
+function OnPluginBroadcast (msg, id, name, text)
+  if (rankme_enabled) and (id == '3e7dedbe37e44942dd46d264') then              -- GMCP Handler plugin. and not doing this part if rankme is disabled.
+    if (text == "comm.channel") then
+        local channel = gmcp("comm.channel.chan")
+        --local msg_raw = gmcp("comm.channel.msg")
+			  local msg = strip_colours(gmcp("comm.channel.msg"))
+        local character = gmcp("comm.channel.player")
+
+        if channel == "clantalk" then
+          if string.find(msg,".* tells the CLAN: 'rankme item.*'") then
+            Execute("seekrank " .. character .. " item ct")
+          elseif string.find(msg,".* tells the CLAN: 'rankme detail.*'") then
+            Execute("seekrank " .. character .. " detail ct")
+          elseif string.find(msg,".* tells the CLAN: 'rankme help.*'") then
+            Execute("ct @Mrankme@Y usage: @Mct rankme@Y for just the rank, @Mct rankme item@Y or @Mct rankme detail@Y for itemized or detailed output.$C") 
+          elseif string.find(msg,".* tells the CLAN: 'rankme.*'") then
+            Execute("seekrank " .. character .. " ct")
+          end
+        end
+    end
+  end
+
+
+end
+
+
+ ----------------------- Plugin Update Code -----------------------
+ -- Code taken from Durel's dinv plugin, originally via Crowley
+ require("wait")
+require("async")
+json = require("json")
+
+ plugin_url = "https://raw.githubusercontent.com/Kindahlin/AardPlugins/refs/heads/master/SeekerStats.xml"
+ SetVariable("DownloadURL", plugin_url)
+ plugin_protocol = "HTTPS"
+ plugin_prefix = "[SeekerStats]"
+ 
+ function update_check_alias()
+     update_plugin("check")
+     ColourNote("white", "", plugin_prefix .. " Checking for updated version...")
+ end
+ 
+ function update_install_alias()
+     update_plugin("install")
+     ColourNote("white", "", plugin_prefix .. " Checking for and installing updated version...")
+ end
+ 
+ function reload_plugin()
+     local scriptPrefix = GetAlphaOption("script_prefix")
+     local retval
+ 
+     -- If the user has not already specified the script prefix for this version of mush, pick a
+     -- reasonable default value
+     if (scriptPrefix == "") then
+         scriptPrefix = "\\\\\\"
+         SetAlphaOption("script_prefix", scriptPrefix)
+     end
+ 
+     -- Tell mush to reload the plugin in one second.  We can't do it directly here because a
+     -- plugin can't unload itself.  Even if it could, how could it tell mush to load it again
+     -- if it weren't installed? 
+     retval = Execute(scriptPrefix.."DoAfterSpecial(0.1, \"ReloadPlugin('"..GetPluginID().."')\", sendto.script)")
+ end
+ 
+ function update_plugin(mode)
+     update_mode = mode
+ 
+     wait.make(get_plugin_file)
+ end
+ 
+ function get_plugin_file()
+     local urlThread = async.request(plugin_url, plugin_protocol)
+ 
+     if not urlThread then
+         note_error("Couldn't create async url request.")
+         return
+     end
+ 
+     local timeout = 10
+     local totTime = 0
+     while (urlThread:alive() and totTime < timeout) do
+         wait.time(0.1)
+         totTime = totTime + 0.1
+     end
+ 
+     local remoteRet, pluginData, status, headers, fullStatus = urlThread:join()
+ 
+     if not status then
+         ColourNote("red", "", plugin_prefix .. " Couldn't download plugin file. No status code.")
+         
+         return
+     end
+ 
+     if (status ~= 200) then
+         ColourNote("red", "", plugin_prefix .. " Plugin file request status code: " .. status .. ": " .. fullStatus)
+         return
+     end
+     
+     local currentVersion = GetPluginInfo(GetPluginID(), 19) or 0
+     local currentVerStr  = string.format("%1.3f", currentVersion)
+     local remoteVerStr   = string.match(pluginData, '%s%s+version="([0-9%.]+)"')
+     local remoteVersion  = tonumber(remoteVerStr or "") or 0
+ 
+     if remoteVersion == currentVersion then
+         ColourNote("white", "", plugin_prefix .. " You are running the most recent version (v" .. currentVerStr .. ")")
+     elseif (remoteVersion < currentVersion) then
+         ColourNote("white", "", plugin_prefix .. " You have a newer version than is publicly available. (v" .. currentVerStr .. ")")
+     elseif (update_mode == "check") then
+         ColourNote("white", "", plugin_prefix .. " You are running v" .. currentVerStr .. ", but there's a newer version v" .. remoteVerStr)
+     elseif (update_mode == "install") then
+         ColourNote("white", "", plugin_prefix .. " Updating plugin from version " .. currentVerStr .. " to version " .. remoteVerStr) 
+ 
+         local pluginFile = GetPluginInfo(GetPluginID(), 6)
+         local file = io.open(pluginFile, "wb")
+         file:write(pluginData)
+         file:close()
+         reload_plugin()
+     else
+         ColourNote("red", "", plugin_prefix .. " Invalid update mode: " .. update_mode)
+     end
+ end
+ ----------------------- End Plugin Update Code -----------------------
 
 ]]>
 </script>
