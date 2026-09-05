@@ -15,7 +15,7 @@
    save_state="y"
    date_written="2024-09-22 13:16:41"
    requires="5.07"
-   version="1.6"
+   version="1.69"
    >
 
 </plugin>
@@ -645,7 +645,9 @@ function output_seekrank_playername_channel(name, channel)
   local eligibleDays = tonumber(stats.is_eligible_days)
   if (eligibleDays ~= nil) then
     if (eligibleDays<=0) then 
-      isEligible = stat_color .. " [" .. value_color .. "Eligible for promotion" .. stat_color .. "]"
+      isEligible = stat_color .. " [" .. value_color .. "Meets minimum days in clan." .. stat_color .. "]"
+    else
+      isEligible = stat_color .. " [" .. value_color .. "Eligible in ".. eligibleDays .. " days." .. stat_color .. "]"
     end
   end
   output_text(
